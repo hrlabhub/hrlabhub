@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR Lab Hub — Build Smarter HR Workflows</title>
+<meta name="description" content="Source code webapp HR berbasis Google Apps Script. Sekali beli, milik selamanya. Tanpa coding, tanpa biaya langganan bulanan.">
+<meta property="og:title" content="HR Lab Hub — Build Smarter HR Workflows">
+<meta property="og:description" content="Source code webapp HR berbasis Google Apps Script. Sekali beli, milik selamanya.">
+<meta name="theme-color" content="#006070">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5' fill='%23f7cb5f'/%3E%3Crect x='19' y='4' width='12' height='32' rx='6' transform='rotate(18 25 20)' fill='%23f7cb5f'/%3E%3C/svg%3E">
+
+<script>
+  /* =====================================================
+   * KONFIGURASI UNTUK GITHUB PAGES
+   * Isi dengan URL Web App Apps Script (yang berakhiran /exec).
+   * Saat dibuka langsung dari Apps Script, nilai ini diabaikan.
+   * ===================================================== */
+  window.HRLAB_API_URL = 'PASTE_URL_WEB_APP_DI_SINI';
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+        colors: {
+          teal: { DEFAULT: '#006070', dark: '#004650', light: '#0A7A8C' },
+          gold: { DEFAULT: '#f7cb5f', dark: '#e0ad2e' },
+          free: { DEFAULT: '#15803D', soft: '#DCFCE7' },
+          ink: '#0F172A',
+          muted: '#475569',
+          soft: '#F8FAFC'
+        },
+        borderRadius: { '2xl': '1.25rem', '3xl': '1.75rem' }
+      }
+    }
+  }
+</script>
+
+<script src="https://unpkg.com/lucide@latest"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+<style>
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; color: #0F172A; }
+  .shadow-card { box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 8px 24px -8px rgba(15,23,42,0.10); }
+  .shadow-cta { box-shadow: 0 10px 24px -8px rgba(247,203,95,0.55); }
+  .bg-dot-grid { background-image: radial-gradient(#00607022 1px, transparent 1px); background-size: 18px 18px; }
+
+  @keyframes riseIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+  .rise-in { animation: riseIn 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+  .rise-in-1 { animation-delay: .05s; } .rise-in-2 { animation-delay: .18s; }
+  .rise-in-3 { animation-delay: .31s; } .rise-in-4 { animation-delay: .44s; }
+
+  @keyframes pulse2 { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+  .skeleton { animation: pulse2 1.6s ease-in-out infinite; background: #E2E8F0; border-radius: .5rem; }
+
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  @media (prefers-reduced-motion: reduce) { .rise-in, .skeleton { animation: none; } }
+  [x-cloak] { display: none !important; }
+  .focus-ring:focus-visible { outline: 2px solid #006070; outline-offset: 3px; }
+</style>
+</head>
+
+<body class="bg-white text-ink antialiased" x-data="app()">
+
+<!-- ============ NAVBAR ============ -->
+<header x-data="{ open: false }" class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-100">
+  <div class="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
+    <a href="#top" class="flex items-center gap-2.5">
+      <svg width="30" height="30" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <circle cx="10.5" cy="10.5" r="6.5" fill="#f7cb5f"/>
+        <rect x="19" y="4" width="12" height="32" rx="6" transform="rotate(18 25 20)" fill="#f7cb5f"/>
+      </svg>
+      <span class="text-lg font-extrabold tracking-tight text-teal">HR Lab Hub</span>
+    </a>
+
+    <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-muted">
+      <a href="#keunggulan" class="hover:text-teal focus-ring">Keunggulan</a>
+      <a href="#produk" class="hover:text-teal focus-ring">Produk</a>
+      <a href="#cara-kerja" class="hover:text-teal focus-ring">Cara Kerja</a>
+      <a href="#faq" x-show="faq.length" x-cloak class="hover:text-teal focus-ring">FAQ</a>
+    </nav>
+
+    <a :href="ctaLink" target="_blank" rel="noopener"
+       class="hidden md:inline-flex items-center bg-gold hover:bg-gold-dark text-teal-dark font-bold text-sm px-5 py-2.5 rounded-full shadow-cta transition-colors focus-ring">
+      Lihat Katalog
+    </a>
+
+    <button @click="open = !open" class="md:hidden p-2 -mr-2 text-teal focus-ring" aria-label="Buka menu">
+      <i data-lucide="menu" x-show="!open" class="w-6 h-6"></i>
+      <i data-lucide="x" x-show="open" x-cloak class="w-6 h-6"></i>
+    </button>
+  </div>
+
+  <div x-show="open" x-cloak x-transition class="md:hidden border-t border-slate-100 bg-white px-5 py-4 space-y-3">
+    <a @click="open=false" href="#keunggulan" class="block text-sm font-medium text-muted py-1">Keunggulan</a>
+    <a @click="open=false" href="#produk" class="block text-sm font-medium text-muted py-1">Produk</a>
+    <a @click="open=false" href="#cara-kerja" class="block text-sm font-medium text-muted py-1">Cara Kerja</a>
+    <a @click="open=false" href="#faq" x-show="faq.length" class="block text-sm font-medium text-muted py-1">FAQ</a>
+    <a :href="ctaLink" target="_blank" rel="noopener"
+       class="block text-center bg-gold text-teal-dark font-bold text-sm px-5 py-3 rounded-full shadow-cta mt-2">
+      Lihat Katalog Produk
+    </a>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section id="top" class="relative overflow-hidden bg-dot-grid">
+  <div class="absolute inset-0 bg-gradient-to-b from-white via-white to-soft"></div>
+  <div class="relative max-w-6xl mx-auto px-5 pt-12 pb-16 md:pt-20 md:pb-24">
+    <div class="max-w-xl">
+      <span class="rise-in inline-flex items-center gap-2 bg-teal/5 border border-teal/15 text-teal text-xs font-semibold px-3.5 py-1.5 rounded-full">
+        <i data-lucide="zap" class="w-3.5 h-3.5"></i> Solusi HR automation tanpa skill coding
+      </span>
+      <h1 class="rise-in rise-in-1 mt-5 text-[2rem] leading-[1.15] sm:text-4xl md:text-5xl font-extrabold tracking-tight text-ink">
+        Bikin sistem HR sendiri cuma modal copy-paste.
+      </h1>
+      <p class="rise-in rise-in-1 mt-1 text-xl sm:text-2xl font-semibold text-teal">Tanpa coding, tanpa biaya langganan bulanan.</p>
+      <p class="rise-in rise-in-2 mt-5 text-base text-muted leading-relaxed">
+        Solusi otomatisasi HR berbasis Google Apps Script yang 100% milik Anda selamanya. Dapatkan source code
+        (<span class="font-mono text-[0.92em] text-ink">Code.gs</span> + <span class="font-mono text-[0.92em] text-ink">Index.html</span>)
+        siap pakai, aman tersimpan di Google Drive Anda sendiri.
+      </p>
+      <div class="rise-in rise-in-3 mt-7 flex flex-col sm:flex-row gap-3">
+        <a :href="ctaLink" target="_blank" rel="noopener"
+           class="inline-flex items-center justify-center bg-gold hover:bg-gold-dark text-teal-dark font-bold text-base px-7 py-4 rounded-full shadow-cta transition-colors focus-ring">
+          Lihat Katalog Produk di Lynk.id
+        </a>
+        <a href="#produk" x-show="countFree > 0" x-cloak @click="filterTipe = 'Gratis'"
+           class="inline-flex items-center justify-center border border-teal/20 text-teal font-semibold text-base px-7 py-4 rounded-full hover:bg-teal/5 transition-colors focus-ring">
+          Coba yang gratis dulu
+        </a>
+      </div>
+      <div class="rise-in rise-in-4 mt-8 flex flex-wrap items-center gap-2 text-sm font-medium text-teal-dark">
+        <span class="inline-flex items-center gap-1.5 bg-white border border-slate-200 rounded-full px-3.5 py-2 shadow-sm"><i data-lucide="clipboard-copy" class="w-4 h-4"></i> Copy code</span>
+        <i data-lucide="arrow-right" class="w-4 h-4 text-slate-300"></i>
+        <span class="inline-flex items-center gap-1.5 bg-white border border-slate-200 rounded-full px-3.5 py-2 shadow-sm"><i data-lucide="clipboard-paste" class="w-4 h-4"></i> Paste di Apps Script</span>
+        <i data-lucide="arrow-right" class="w-4 h-4 text-slate-300"></i>
+        <span class="inline-flex items-center gap-1.5 bg-teal text-white rounded-full px-3.5 py-2 shadow-sm"><i data-lucide="rocket" class="w-4 h-4"></i> Aplikasi HR siap!</span>
+      </div>
+    </div>
+
+    <div class="rise-in rise-in-2 mt-12 md:mt-14 md:max-w-lg mx-auto">
+      <div class="rounded-3xl border border-slate-200 bg-white shadow-card p-3">
+        <div class="flex items-center gap-1.5 px-2 pb-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-slate-200"></span><span class="w-2.5 h-2.5 rounded-full bg-slate-200"></span><span class="w-2.5 h-2.5 rounded-full bg-slate-200"></span>
+        </div>
+        <div class="rounded-2xl bg-soft p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-bold text-ink">HR Dashboard</p>
+            <span class="text-[11px] font-semibold text-teal bg-teal/10 px-2 py-0.5 rounded-full">Live</span>
+          </div>
+          <div class="grid grid-cols-3 gap-2.5">
+            <div class="bg-white rounded-xl border border-slate-200 p-2.5"><p class="text-[11px] text-muted">Headcount</p><p class="text-lg font-extrabold">248</p></div>
+            <div class="bg-white rounded-xl border border-slate-200 p-2.5"><p class="text-[11px] text-muted">Turnover</p><p class="text-lg font-extrabold text-teal">3.1%</p></div>
+            <div class="bg-white rounded-xl border border-slate-200 p-2.5"><p class="text-[11px] text-muted">eNPS</p><p class="text-lg font-extrabold">+42</p></div>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 p-3">
+            <div class="flex items-end gap-1.5 h-16">
+              <div class="w-full bg-teal/20 rounded-sm" style="height:40%"></div><div class="w-full bg-teal/30 rounded-sm" style="height:65%"></div>
+              <div class="w-full bg-teal/50 rounded-sm" style="height:50%"></div><div class="w-full bg-gold rounded-sm" style="height:85%"></div>
+              <div class="w-full bg-teal/40 rounded-sm" style="height:60%"></div><div class="w-full bg-teal/60 rounded-sm" style="height:75%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ VALUE PROPOSITION ============ -->
+<section id="keunggulan" class="max-w-6xl mx-auto px-5 py-16 md:py-20">
+  <h2 class="text-2xl md:text-3xl font-extrabold text-center max-w-lg mx-auto">Dibangun untuk HR yang ingin bergerak cepat, bukan yang mau belajar coding.</h2>
+  <div class="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-card">
+      <div class="w-10 h-10 rounded-xl bg-teal/10 flex items-center justify-center mb-3.5"><i data-lucide="wrench" class="w-5 h-5 text-teal"></i></div>
+      <h3 class="font-bold text-sm leading-snug">Gak bisa coding? Tanpa masalah!</h3>
+      <p class="mt-1.5 text-[13px] text-muted leading-relaxed">Cukup ikuti panduan copy-paste 5 menit, kodenya kami yang urus.</p>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-card">
+      <div class="w-10 h-10 rounded-xl bg-teal/10 flex items-center justify-center mb-3.5"><i data-lucide="infinity" class="w-5 h-5 text-teal"></i></div>
+      <h3 class="font-bold text-sm leading-snug">Sekali bayar, milik selamanya</h3>
+      <p class="mt-1.5 text-[13px] text-muted leading-relaxed">Bebas dari biaya langganan SaaS HR yang mahal per bulan/per user.</p>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-card">
+      <div class="w-10 h-10 rounded-xl bg-teal/10 flex items-center justify-center mb-3.5"><i data-lucide="shield-check" class="w-5 h-5 text-teal"></i></div>
+      <h3 class="font-bold text-sm leading-snug">Data 100% aman & milik Anda</h3>
+      <p class="mt-1.5 text-[13px] text-muted leading-relaxed">Tersimpan aman di Google Sheets & Google Drive akun Anda sendiri.</p>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-card">
+      <div class="w-10 h-10 rounded-xl bg-teal/10 flex items-center justify-center mb-3.5"><i data-lucide="bar-chart-3" class="w-5 h-5 text-teal"></i></div>
+      <h3 class="font-bold text-sm leading-snug">Dashboard real-time & modern</h3>
+      <p class="mt-1.5 text-[13px] text-muted leading-relaxed">Tampilan responsive, hemat waktu admin, siap cetak laporan otomatis.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PRODUK (adaptif sesuai jumlah) ============ -->
+<section id="produk" class="bg-soft py-16 md:py-20" x-show="loading || produk.length" x-cloak>
+  <div class="max-w-6xl mx-auto px-5">
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+      <div class="max-w-lg">
+        <h2 class="text-2xl md:text-3xl font-extrabold">Katalog webapp siap pakai</h2>
+        <p class="mt-2 text-muted leading-relaxed">
+          <span x-show="!loading" x-text="summaryText"></span>
+          <span x-show="loading">Semua dibangun di atas Google Apps Script — tinggal copy, paste, deploy.</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- KONTROL: muncul bertahap sesuai jumlah produk -->
+    <div x-show="!loading && mode !== 'sedikit'" x-cloak class="mt-7 space-y-3">
+
+      <!-- Pencarian (mode 'banyak', 13+ produk) -->
+      <div x-show="mode === 'banyak'" class="relative">
+        <svg class="w-4 h-4 text-muted absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" x-model.debounce.200ms="search" @input="page = 1" placeholder="Cari aplikasi, misal: absensi, cuti, rekrutmen…"
+               class="w-full bg-white border border-slate-200 rounded-full pl-11 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal/30">
+      </div>
+
+      <!-- Filter tipe (selalu ada di mode sedang & banyak, hanya kalau ada produk gratis) -->
+      <div class="flex gap-2 overflow-x-auto no-scrollbar -mx-5 px-5" x-show="countFree > 0 || kategoriList.length > 1">
+        <template x-for="t in tipeOptions" :key="t.value">
+          <button @click="filterTipe = t.value; page = 1"
+                  class="shrink-0 text-sm font-semibold px-4 py-2 rounded-full border transition-colors focus-ring"
+                  :class="filterTipe === t.value ? 'bg-teal text-white border-teal' : 'bg-white text-muted border-slate-200 hover:border-teal/40'">
+            <span x-text="t.label"></span>
+            <span class="ml-1 text-xs opacity-70" x-text="t.count"></span>
+          </button>
+        </template>
+
+        <span x-show="kategoriList.length > 1" class="shrink-0 w-px bg-slate-200 mx-1"></span>
+
+        <template x-for="k in kategoriList" :key="k">
+          <button x-show="kategoriList.length > 1" @click="filterKategori = (filterKategori === k ? '' : k); page = 1"
+                  class="shrink-0 text-sm font-medium px-4 py-2 rounded-full border transition-colors focus-ring"
+                  :class="filterKategori === k ? 'bg-teal/10 text-teal border-teal/40' : 'bg-white text-muted border-slate-200 hover:border-teal/40'"
+                  x-text="k"></button>
+        </template>
+      </div>
+    </div>
+
+    <!-- Skeleton -->
+    <div x-show="loading" class="mt-9 grid md:grid-cols-2 gap-5">
+      <template x-for="n in 4" :key="n">
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 space-y-3">
+          <div class="skeleton h-4 w-20"></div><div class="skeleton h-5 w-2/3"></div>
+          <div class="skeleton h-3 w-full"></div><div class="skeleton h-3 w-5/6"></div>
+          <div class="skeleton h-11 w-full rounded-full mt-2"></div>
+        </div>
+      </template>
+    </div>
+
+    <!-- GRID PRODUK -->
+    <div x-show="!loading" x-cloak class="mt-7 grid gap-4 md:gap-5" :class="gridClass">
+      <template x-for="item in visibleProduk" :key="item['Nama Produk']">
+        <article class="relative bg-white rounded-2xl border shadow-card flex flex-col"
+                 :class="[
+                   isFeatured(item) ? 'border-gold ring-2 ring-gold/40' : 'border-slate-200',
+                   compact ? 'p-5' : 'p-6'
+                 ]">
+
+          <!-- Baris badge -->
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span x-show="isFree(item)" class="text-[11px] font-bold text-free bg-free-soft px-2.5 py-1 rounded-full">GRATIS</span>
+            <span x-show="isFeatured(item)" class="text-[11px] font-bold text-teal-dark bg-gold px-2.5 py-1 rounded-full">★ Unggulan</span>
+            <span x-show="item['Badge']" x-text="item['Badge']" class="text-[11px] font-bold text-teal bg-teal/10 px-2.5 py-1 rounded-full"></span>
+            <span x-show="item['Kategori'] && mode !== 'sedikit'" x-text="item['Kategori']" class="text-[11px] font-medium text-muted bg-slate-100 px-2.5 py-1 rounded-full"></span>
+          </div>
+
+          <h3 class="mt-3 font-bold text-ink leading-snug" :class="compact ? 'text-base' : 'text-lg'" x-text="item['Nama Produk']"></h3>
+          <p class="mt-1.5 text-sm text-muted leading-relaxed" :class="compact && 'line-clamp-2'" x-text="item['Deskripsi']"></p>
+
+          <!-- Fitur: tampil penuh di mode sedikit/sedang; bisa dibuka-tutup di mode banyak -->
+          <div x-data="{ showFitur: false }" class="mt-4">
+            <button x-show="compact && fiturOf(item).length" @click="showFitur = !showFitur"
+                    class="text-xs font-semibold text-teal inline-flex items-center gap-1 focus-ring">
+              <span x-text="showFitur ? 'Sembunyikan fitur' : 'Lihat ' + fiturOf(item).length + ' fitur'"></span>
+              <svg class="w-3.5 h-3.5 transition-transform" :class="showFitur && 'rotate-180'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <ul x-show="!compact || showFitur" x-collapse class="space-y-2 text-sm text-ink" :class="compact && 'mt-2.5'">
+              <template x-for="fitur in fiturOf(item)" :key="fitur">
+                <li class="flex items-start gap-2">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 mt-0.5 shrink-0" :class="isFree(item) ? 'text-free' : 'text-teal'"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span x-text="fitur"></span>
+                </li>
+              </template>
+            </ul>
+          </div>
+
+          <!-- Harga + CTA -->
+          <div class="mt-auto pt-5">
+            <div class="flex items-baseline gap-2 mb-3">
+              <template x-if="isFree(item)">
+                <span class="text-xl font-extrabold text-free">Rp0</span>
+              </template>
+              <template x-if="!isFree(item) && item['Harga']">
+                <span class="text-xl font-extrabold text-ink" x-text="rupiah(item['Harga'])"></span>
+              </template>
+              <template x-if="!isFree(item) && item['Harga Coret'] && Number(item['Harga Coret']) > Number(item['Harga'])">
+                <span class="text-sm text-muted line-through" x-text="rupiah(item['Harga Coret'])"></span>
+              </template>
+            </div>
+
+            <a :href="item['Link Lynk.id'] || ctaLink" target="_blank" rel="noopener"
+               class="w-full inline-flex justify-center items-center gap-2 font-bold text-sm px-5 py-3.5 rounded-full transition-colors focus-ring"
+               :class="isFree(item)
+                 ? 'bg-teal hover:bg-teal-dark text-white'
+                 : 'bg-gold hover:bg-gold-dark text-teal-dark shadow-cta'">
+              <svg x-show="isFree(item)" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg>
+              <span x-text="isFree(item) ? labelGratis : labelBerbayar"></span>
+            </a>
+          </div>
+        </article>
+      </template>
+    </div>
+
+    <!-- Hasil filter kosong -->
+    <div x-show="!loading && filteredProduk.length === 0" x-cloak class="mt-6 text-center bg-white border border-dashed border-slate-300 rounded-2xl p-8">
+      <p class="text-sm text-muted">Tidak ada aplikasi yang cocok.</p>
+      <button @click="resetFilter()" class="mt-3 text-sm font-semibold text-teal focus-ring">Tampilkan semua</button>
+    </div>
+
+    <!-- Load more -->
+    <div x-show="!loading && hasMore" x-cloak class="mt-8 text-center">
+      <button @click="page++" class="inline-flex items-center gap-2 bg-white border border-slate-200 hover:border-teal/40 text-teal font-semibold text-sm px-6 py-3 rounded-full focus-ring">
+        Tampilkan lebih banyak
+        <span class="text-xs text-muted" x-text="'(' + (filteredProduk.length - visibleProduk.length) + ' lagi)'"></span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HOW IT WORKS ============ -->
+<section id="cara-kerja" class="max-w-6xl mx-auto px-5 py-16 md:py-20">
+  <h2 class="text-2xl md:text-3xl font-extrabold text-center">Tiga langkah menuju sistem HR sendiri</h2>
+  <div class="mt-10 grid md:grid-cols-3 gap-5">
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-card">
+      <span class="text-3xl font-extrabold text-teal/20">1</span>
+      <h3 class="mt-2 font-bold">Pilih aplikasinya</h3>
+      <p class="mt-1.5 text-sm text-muted leading-relaxed">Download yang gratis untuk mencoba, atau beli source code lengkap di Lynk.id.</p>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-card">
+      <span class="text-3xl font-extrabold text-teal/20">2</span>
+      <h3 class="mt-2 font-bold">Copy-paste ke Apps Script</h3>
+      <p class="mt-1.5 text-sm text-muted leading-relaxed">Salin file Code.gs dan Index.html ke project Google Apps Script Anda, sesuai panduan visual.</p>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-card">
+      <span class="text-3xl font-extrabold text-teal/20">3</span>
+      <h3 class="mt-2 font-bold">Deploy & jalankan</h3>
+      <p class="mt-1.5 text-sm text-muted leading-relaxed">Klik deploy, dan sistem HR otomatis Anda langsung siap dipakai tim.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TESTIMONI (otomatis tersembunyi jika kosong) ============ -->
+<section x-show="testimoni.length" x-cloak class="bg-soft py-16 md:py-20">
+  <div class="max-w-6xl mx-auto px-5">
+    <h2 class="text-2xl md:text-3xl font-extrabold text-center">Dipakai HR yang ingin kerja lebih ringkas</h2>
+    <!-- Mobile: geser horizontal | Desktop: grid -->
+    <div class="mt-9 flex md:grid gap-4 md:gap-5 overflow-x-auto md:overflow-visible snap-x snap-mandatory no-scrollbar -mx-5 px-5 md:mx-0 md:px-0"
+         :class="testimoni.length === 1 ? 'md:grid-cols-1 md:max-w-xl md:mx-auto' : testimoni.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'">
+      <template x-for="(item, i) in testimoni" :key="i">
+        <figure class="snap-start shrink-0 w-[85%] sm:w-[60%] md:w-auto bg-white rounded-2xl border border-slate-200 shadow-card p-6">
+          <blockquote class="text-sm text-ink leading-relaxed" x-text="'“' + item['Isi Testimoni'] + '”'"></blockquote>
+          <figcaption class="mt-4">
+            <p class="text-sm font-bold" x-text="item['Nama']"></p>
+            <p class="text-xs text-muted" x-text="item['Peran']"></p>
+          </figcaption>
+        </figure>
+      </template>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ (otomatis tersembunyi jika kosong) ============ -->
+<section id="faq" x-show="faq.length" x-cloak class="max-w-3xl mx-auto px-5 py-16 md:py-20">
+  <h2 class="text-2xl md:text-3xl font-extrabold text-center">Pertanyaan yang sering ditanyakan</h2>
+  <div class="mt-9 space-y-3">
+    <template x-for="(item, index) in faq" :key="index">
+      <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+        <button @click="activeFaq = (activeFaq === index ? null : index)" class="w-full flex items-center justify-between gap-4 text-left px-5 py-4 focus-ring">
+          <span class="font-semibold text-sm sm:text-base" x-text="item['Pertanyaan']"></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-teal shrink-0 transition-transform" :class="activeFaq === index && 'rotate-180'"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div x-show="activeFaq === index" x-collapse class="px-5 pb-4 text-sm text-muted leading-relaxed whitespace-pre-line" x-text="item['Jawaban']"></div>
+      </div>
+    </template>
+  </div>
+</section>
+
+<!-- ============ CTA BAND ============ -->
+<section class="bg-teal">
+  <div class="max-w-4xl mx-auto px-5 py-14 text-center">
+    <h2 class="text-2xl md:text-3xl font-extrabold text-white">Siap bangun sistem HR sendiri, hari ini?</h2>
+    <p class="mt-2 text-white/80 text-sm sm:text-base">Sekali beli, kode jadi milik Anda selamanya.</p>
+    <a :href="ctaLink" target="_blank" rel="noopener"
+       class="mt-6 inline-flex items-center justify-center bg-gold hover:bg-gold-dark text-teal-dark font-bold text-base px-8 py-4 rounded-full shadow-cta transition-colors focus-ring">
+      Lihat Katalog Produk di Lynk.id
+    </a>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="bg-white border-t border-slate-100">
+  <div class="max-w-6xl mx-auto px-5 py-10">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+      <div class="flex items-center gap-2.5">
+        <svg width="26" height="26" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+          <circle cx="10.5" cy="10.5" r="6.5" fill="#f7cb5f"/>
+          <rect x="19" y="4" width="12" height="32" rx="6" transform="rotate(18 25 20)" fill="#f7cb5f"/>
+        </svg>
+        <div>
+          <p class="text-sm font-extrabold text-teal">HR Lab Hub</p>
+          <p class="text-xs text-muted">Build smarter HR workflows</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-4 text-muted">
+        <a href="#" aria-label="Instagram" class="hover:text-teal focus-ring"><i data-lucide="instagram" class="w-5 h-5"></i></a>
+        <a href="#" aria-label="TikTok" class="hover:text-teal focus-ring"><i data-lucide="music-2" class="w-5 h-5"></i></a>
+        <a :href="ctaLink" target="_blank" rel="noopener" aria-label="Lynk.id Store" class="hover:text-teal focus-ring"><i data-lucide="store" class="w-5 h-5"></i></a>
+      </div>
+    </div>
+    <div class="mt-8 pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <p class="text-xs text-muted">© <span x-text="new Date().getFullYear()"></span> HR Lab Hub. Semua hak dilindungi.</p>
+      <a :href="ctaLink" target="_blank" rel="noopener" class="text-xs font-semibold text-teal hover:underline">Kunjungi toko di Lynk.id →</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  if (window.lucide) lucide.createIcons();
+
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('app', () => ({
+      produk: [], testimoni: [], faq: [],
+      loading: true,
+      activeFaq: null,
+
+      // Pengaturan (bisa diubah dari tab "Pengaturan")
+      ctaLink: 'https://lynk.id/hrlabhub',
+      perPage: 6,
+      labelBerbayar: 'Beli di Lynk.id',
+      labelGratis: 'Download Gratis',
+
+      // State filter
+      filterTipe: 'Semua',
+      filterKategori: '',
+      search: '',
+      page: 1,
+
+      init() {
+        // Tampilkan data terakhir dari cache browser dulu (instan), lalu perbarui di belakang layar
+        try {
+          const saved = JSON.parse(localStorage.getItem('hrlab_content') || 'null');
+          if (saved) this.applyData(saved);
+        } catch (e) {}
+
+        const onData = (d) => {
+          this.applyData(d);
+          try { localStorage.setItem('hrlab_content', JSON.stringify(d)); } catch (e) {}
+        };
+        const onFail = (err) => { console.error('Gagal memuat data:', err); this.loading = false; };
+
+        // Mode 1: dibuka dari Apps Script
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run.withSuccessHandler(onData).withFailureHandler(onFail).getContent();
+          return;
+        }
+
+        // Mode 2: dibuka dari GitHub Pages / hosting lain → ambil JSON dari Web App
+        const api = window.HRLAB_API_URL;
+        if (!api || api.indexOf('script.google.com') === -1) { onFail('HRLAB_API_URL belum diisi'); return; }
+        fetch(api + (api.includes('?') ? '&' : '?') + 'api=1')
+          .then(r => r.json())
+          .then(onData)
+          .catch(onFail);
+      },
+
+      applyData(d) {
+        this.produk = d.produk || [];
+        this.testimoni = d.testimoni || [];
+        this.faq = d.faq || [];
+        const p = d.pengaturan || {};
+        if (p.lynk_link) this.ctaLink = p.lynk_link;
+        if (Number(p.produk_per_halaman) > 0) this.perPage = Number(p.produk_per_halaman);
+        if (p.label_tombol_berbayar) this.labelBerbayar = p.label_tombol_berbayar;
+        if (p.label_tombol_gratis) this.labelGratis = p.label_tombol_gratis;
+        this.loading = false;
+      },
+
+      // ---------- Helper ----------
+      isFree(item)     { return String(item['Tipe'] || '').trim().toLowerCase() === 'gratis'; },
+      isFeatured(item) { const v = item['Unggulan']; return v === true || String(v).toUpperCase() === 'TRUE'; },
+      fiturOf(item)    { return Object.keys(item).filter(k => /^Fitur\s*\d+$/i.test(k)).sort((a,b) => parseInt(a.replace(/\D/g,'')) - parseInt(b.replace(/\D/g,''))).map(k => item[k]).filter(Boolean); },
+      rupiah(n)        { const v = Number(n); return isNaN(v) ? String(n) : 'Rp' + v.toLocaleString('id-ID'); },
+      resetFilter()    { this.filterTipe = 'Semua'; this.filterKategori = ''; this.search = ''; this.page = 1; },
+
+      // ---------- Mode tampilan berdasarkan jumlah produk ----------
+      // sedikit : 1–4 produk  → grid besar, tanpa filter, tanpa pagination
+      // sedang  : 5–12 produk → + chip filter (Semua/Berbayar/Gratis/Kategori) + "Tampilkan lebih banyak"
+      // banyak  : 13+ produk  → + kolom pencarian, kartu ringkas (fitur bisa dibuka-tutup), grid 3 kolom
+      get mode() {
+        const n = this.produk.length;
+        if (n <= 4) return 'sedikit';
+        if (n <= 12) return 'sedang';
+        return 'banyak';
+      },
+      get compact() { return this.mode === 'banyak'; },
+
+      get gridClass() {
+        const n = this.visibleProduk.length;
+        if (this.mode === 'sedikit') {
+          if (n === 1) return 'md:grid-cols-1 md:max-w-xl md:mx-auto';
+          if (n === 3) return 'md:grid-cols-3';
+          return 'md:grid-cols-2';
+        }
+        if (this.mode === 'sedang') return 'sm:grid-cols-2 lg:grid-cols-3';
+        return 'sm:grid-cols-2 lg:grid-cols-3';
+      },
+
+      get countFree() { return this.produk.filter(p => this.isFree(p)).length; },
+      get countPaid() { return this.produk.length - this.countFree; },
+
+      get tipeOptions() {
+        const opts = [{ value: 'Semua', label: 'Semua', count: this.produk.length }];
+        if (this.countPaid && this.countFree) {
+          opts.push({ value: 'Berbayar', label: 'Berbayar', count: this.countPaid });
+          opts.push({ value: 'Gratis', label: 'Gratis', count: this.countFree });
+        }
+        return opts;
+      },
+
+      get kategoriList() {
+        return [...new Set(this.produk.map(p => String(p['Kategori'] || '').trim()).filter(Boolean))];
+      },
+
+      get summaryText() {
+        const parts = [this.produk.length + ' aplikasi Google Apps Script'];
+        if (this.countFree) parts.push(this.countFree + ' di antaranya gratis');
+        return parts.join(', ') + ' — tinggal copy, paste, deploy.';
+      },
+
+      // Unggulan selalu di depan, sisanya mengikuti kolom Urutan
+      get sortedProduk() {
+        return [...this.produk].sort((a, b) => (this.isFeatured(b) ? 1 : 0) - (this.isFeatured(a) ? 1 : 0));
+      },
+
+      get filteredProduk() {
+        const q = this.search.trim().toLowerCase();
+        return this.sortedProduk.filter(p => {
+          if (this.filterTipe === 'Gratis' && !this.isFree(p)) return false;
+          if (this.filterTipe === 'Berbayar' && this.isFree(p)) return false;
+          if (this.filterKategori && String(p['Kategori'] || '').trim() !== this.filterKategori) return false;
+          if (q) {
+            const hay = [p['Nama Produk'], p['Deskripsi'], p['Kategori'], ...this.fiturOf(p)].join(' ').toLowerCase();
+            if (!hay.includes(q)) return false;
+          }
+          return true;
+        });
+      },
+
+      get visibleProduk() {
+        if (this.mode === 'sedikit') return this.filteredProduk;
+        return this.filteredProduk.slice(0, this.page * this.perPage);
+      },
+      get hasMore() { return this.visibleProduk.length < this.filteredProduk.length; }
+    }));
+  });
+</script>
+</body>
+</html>
